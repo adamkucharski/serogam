@@ -54,3 +54,5 @@ plot_estimate(est_dynamics,
 ```
 
 ![plot_estimate2](https://github.com/adamkucharski/serogam/assets/8329046/7eb71910-1cda-4c61-b42e-040abbf6e011)
+
+A [post-epidemic serological survey in 1974](https://www.cambridge.org/core/journals/epidemiology-and-infection/article/mosquitoborne-infections-in-fiji-v-the-197173-dengue-epidemic/FA8AA20BB439CAB922974B498AE0F21C) concluded that around 26% of the Suva population were infected, compared to 16% in the above model (although there will be uncertainty around this estimate that is not yet implemented in this version of the analysis).
