@@ -29,6 +29,9 @@ plot_estimate(est_dynamics,
 			  y_range=c(0,5))
 
 ```
+
+![plot_estimate1](https://github.com/adamkucharski/serogam/assets/8329046/da962b8e-7d50-45ec-8678-adaadc6d956f)
+
 This approach allows us to estimate smooth trends in transmission over time, and suggests there was a historical peak in transmission around 1970 and 1996-97.
 
 However, in Pacific Islands dengue is typically epidemic-prone, with large outbreaks followed by periods of limited circulation. As it happens, large dengue-2 outbreaks were reported in Fiji in [1971-3 and 1997-98](https://elifesciences.org/articles/34848). We can therefore use an adapted model that accounts for this epidemic dynamic. Rather than a smooth increase in seropositivity over time, we can specify the epidemic years and use a GAM with factors by age to constraint transmission to be zero between epidemic years, then estimate the size of the epidemics.
@@ -49,3 +52,5 @@ plot_estimate(est_dynamics,
 			  )
 
 ```
+
+![plot_estimate2](https://github.com/adamkucharski/serogam/assets/8329046/7eb71910-1cda-4c61-b42e-040abbf6e011)
