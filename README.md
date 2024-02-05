@@ -1,5 +1,5 @@
 # serogam
-Non-parameteric estimation of dynamics from serological data
+Non-parametric estimation of dynamics from serological data
 
 ### Quick start
 
