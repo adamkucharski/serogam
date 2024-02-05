@@ -25,8 +25,8 @@ data_in <- data.frame(age = data_fiji$AGE_2015+2.5, outcome = data_fiji$DENV2P) 
 est_dynamics <- estimate_gam(data_in)
 
 plot_estimate(est_dynamics,
-			  survey_year=2015, # year in which ages reported
-			  y_range=c(0,5))
+	      survey_year=2015, # year in which ages reported
+              y_range=c(0,5))
 
 ```
 
@@ -41,15 +41,15 @@ However, in Pacific Islands dengue is typically epidemic-prone, with large outbr
 # Fit model and plot
 # This model uses a piecewise risk function to constrain transmission to epidemic years
 est_dynamics <- estimate_piecewise(data_in,
-								outbreak_years = c(1972,1997),
-								survey_year = 2015 
-								)
+				   outbreak_years = c(1972,1997),
+				   survey_year = 2015 
+				   )
 
 plot_estimate(est_dynamics,
-			  outbreak_years = c(1972,1997),
-			  survey_year=2015, # year in which ages reported
-			  y_range=c(0,50)
-			  )
+              outbreak_years = c(1972,1997),
+              survey_year=2015, # year in which ages reported
+              y_range=c(0,50)
+              )
 
 ```
 
