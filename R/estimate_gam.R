@@ -26,12 +26,6 @@ estimate_gam <- function(data_in) {
     must.include = c("age", "outcome")
   )
   
-  # check for any NAs among data
-  checkmate::assert_data_frame(
-    data_in[, c("age", "outcome")],
-    any.missing = FALSE
-  )
-
   # fit monotonoic gam to data
   b_model <- scam(outcome~s(age,bs="mpi"),family=binomial(link="logit"),data=data_in)
   

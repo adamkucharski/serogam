@@ -31,12 +31,6 @@ estimate_piecewise <- function(data_in,
     colnames(data_in),
     must.include = c("age", "outcome")
   )
-  
-  # check for any NAs among data
-  checkmate::assert_data_frame(
-    data_in[, c("age", "outcome")],
-    any.missing = FALSE
-  )
 
   checkmate::assert_vector(
     outbreak_years
