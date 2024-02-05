@@ -50,7 +50,6 @@ plot_estimate(est_dynamics,
               survey_year=2015, # year in which ages reported
               y_range=c(0,50)
               )
-
 ```
 
 ![plot_estimate2](https://github.com/adamkucharski/serogam/assets/8329046/7eb71910-1cda-4c61-b42e-040abbf6e011)
