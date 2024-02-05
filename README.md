@@ -13,7 +13,7 @@ install_github("adamkucharski/serogam")
 library(serogam)
 ```
 
-Next, load age-stratified dengue serosurvey data from [Kucharski et al, eLife 2018](https://elifesciences.org/articles/34848) and fit a model with smoothly varying transmission over time to dengue-3 positivity prior to the large 2013/14 epidemic:
+Next, load age-stratified dengue serosurvey data from [Kucharski et al, eLife 2018](https://elifesciences.org/articles/34848) and fit a model with smoothly varying transmission over time to the dengue-2 positivity data:
 
 ```
 # Load and format data
