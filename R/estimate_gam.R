@@ -30,7 +30,7 @@ estimate_gam <- function(data_in) {
   )
   
   # fit monotonoic gam to data
-  b_model <- scam(outcome~s(age,bs="mpi"),family=binomial(link="logit"),data=data_in)
+  b_model <- scam::scam(outcome~s(age,bs="mpi"),family=binomial(link="logit"),data=data_in)
   
   # generate prediction across observed range, rounded for fitting
   age_range_smooth <- round(min(data_in$age)):round(max(data_in$age))
