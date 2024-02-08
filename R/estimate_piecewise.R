@@ -14,6 +14,9 @@
 #' @return A `<data.frame>` with the probability of seropositivity by age and 95 CI, as well as annual proportion of the 
 #' population infected by year (where "age" represents the number of years into the past).
 #'
+#' @import checkmate
+#' @import mgcv
+#'
 #' @export
 #'
 

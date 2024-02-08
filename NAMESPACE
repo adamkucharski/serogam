@@ -3,3 +3,6 @@
 export(estimate_gam)
 export(estimate_piecewise)
 export(plot_estimate)
+import(checkmate)
+import(mgcv)
+import(scam)
