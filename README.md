@@ -1,9 +1,18 @@
 # serogam
 Non-parametric estimation of dynamics from serological data
 
+*Note: this package is under development, so some functionality will not yet be stable*
+
 ### Quick start
 
-First install and load the development version of `serogam`:
+This package uses the `scam` package for fitting smooth increasing seroprevalence curves (i.e. representing ongoing transmission, as well as the `mgcv` package for fitting piecewise seroprevalence curves (i.e. representing epidemics with periods of zero circulation in between). There seems to be some issues with fitting in the latest version of `scam`, so we recommend installing version 1.2-14 for now:
+
+```
+package_url <- "https://cran.r-project.org/src/contrib/Archive/scam/scam_1.2-14.tar.gz"
+install.packages(package_url, repos=NULL, type="source")
+```
+
+Next, install and load the development version of `serogam`:
 
 ```
 if(!require("devtools","readr")) install.packages(c("devtools","readr"))
