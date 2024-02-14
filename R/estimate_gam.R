@@ -10,8 +10,6 @@
 #' @return A `<data.frame>` with the probability of seropositivity by age and 95 CI, as well as annual proportion of the 
 #' population infected by year (where "age" represents the number of years into the past).
 #'
-#' @import scam
-#' @import checkmate
 #'
 #' @export
 #'
@@ -30,7 +28,7 @@ estimate_gam <- function(data_in) {
   )
   
   # fit monotonoic gam to data
-  b_model <- scam::scam(outcome~s(age,bs="mpi"),family=binomial(link="logit"),data=data_in)
+  b_model <- scam(outcome~s(age,bs="mpi"),family=binomial(link="logit"),data=data_in)
   
   # generate prediction across observed range, rounded for fitting
   age_range_smooth <- round(min(data_in$age)):round(max(data_in$age))

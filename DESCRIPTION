@@ -3,7 +3,8 @@ Title: Estimate epidemic dynamics from serological data
 Version: 0.1.0.9000
 Authors@R: c(
     person("Adam", "Kucharski", , "adam.kucharski@lshtm.ac.uk", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0001-8814-9421"))
+           comment = c(ORCID = "0000-0001-8814-9421")),
+    person("Emilie", "Finch", , , role = "ctb")
   )
 Description: Estimate epidemic dynamics from age stratified serological data.
 License: MIT + file LICENSE
