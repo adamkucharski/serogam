@@ -30,6 +30,11 @@ estimate_gam <- function(data_in) {
   # fit monotonoic gam to data
   b_model <- scam(outcome~s(age,bs="mpi"),family=binomial(link="logit"),data=data_in)
   
+  #b_model <- gam(outcome~s(age),family=binomial(link="logit"),data=data_in)
+  
+  #b_model <- cm.spline(data_in$age,data_in$outcome)
+  
+  
   # generate prediction across observed range, rounded for fitting
   age_range_smooth <- round(min(data_in$age)):round(max(data_in$age))
   
@@ -59,6 +64,7 @@ estimate_gam <- function(data_in) {
   
   # return the severity estimate
   fit_output
+  
 }
 
 

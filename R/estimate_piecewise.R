@@ -4,12 +4,10 @@
 #' serological data and returns predictions about seropositivity by age and annual risk of historical infection
 #'
 #' @param data_in A `<data.frame>` containing individual-level serological data. The required columns
-#' are "age" (in years) and "outcome" (0 or 1), representing a seropositive/seronegative result 
+#' are "age" (in years at time of survey), "survey_year" (year) and "outcome" (0 or 1), representing a seropositive/seronegative result 
 #' according to the tested biomarker.
 #' 
 #' @param outbreak_years A `<vector>` containing the years in which historical outbreaks occurred.
-#' 
-#' @param survey_year A `<number>` giving the year in which the ages were reported.
 #' 
 #' @return A `<data.frame>` with the probability of seropositivity by age and 95 CI, as well as annual proportion of the 
 #' population infected by year (where "age" represents the number of years into the past).
@@ -19,39 +17,39 @@
 #'
 
 estimate_piecewise <- function(data_in,
-                         outbreak_years,
-                         survey_year) {
+                         outbreak_years) {
   
   # input checking
   checkmate::assert_data_frame(
     data_in,
-    min.rows = 1, min.cols = 2
+    min.rows = 1, min.cols = 3
   )
   # check that input `<data.frame>` has columns age and output
   checkmate::assert_names(
     colnames(data_in),
-    must.include = c("age", "outcome")
+    must.include = c("age", "outcome","survey_year")
   )
 
   checkmate::assert_vector(
     outbreak_years
   )
   
-  checkmate::assert_number(
-    survey_year,
-    lower = 1800, finite = TRUE
-  )
-
-  # convert inputs into age breaks
-  knot_ages <- sort(survey_year-outbreak_years) # replace with your actual ages for knots
-
   # convert age into a factor with levels indicating the interval between knots
   df <- data_in
-  df$age_group <- cut(df$age, breaks = c(-Inf, knot_ages, Inf), include.lowest = TRUE, labels = FALSE)
   
+  # allocate group based on inter-epidemic period born into
+  df$age_group <- mapply(function(age, survey_year) {
+    knot_ages <- sort(survey_year - outbreak_years)
+    cut(age, breaks = c(-Inf, knot_ages, Inf), include.lowest = TRUE, labels = FALSE)
+  }, df$age, df$survey_year)
+  
+  #df$age_group <- cut(df$age, breaks = c(-Inf, knot_ages, Inf), include.lowest = TRUE, labels = FALSE)
   
   # piecewise fit
-  b_model <- gam(outcome~factor(age_group),family=binomial(link="logit"),data=df)
+  b_model <- glm(outcome~factor(age_group),family=binomial(link="logit"),data=df)
+  
+  b_model <- scam(outcome~factor(age_group),family=binomial(link="logit"),data=data_in)
+  
   
   # generate prediction
   age_range_smooth <- round(min(data_in$age)):round(max(data_in$age))
