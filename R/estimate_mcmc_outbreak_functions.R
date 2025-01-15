@@ -1,18 +1,142 @@
+#' Estimate sizes of known outbreaks from seropositivity
+#'
+#' @description Uses information on outbreak time to fit a model with age specific variation in risk
+#'
+#' @param data_in A `<data.frame>` containing individual-level serological data. The required columns
+#' are "age" (in years at time of survey), "survey_year" (year) and "outcome" (0 or 1), representing a seropositive/seronegative result 
+#' according to the tested biomarker.
+#' 
+#' @param outbreak_years A `<vector>` containing the years in which historical outbreaks occurred.
+#' 
+#' @param age_band A `<vector>` containing the cutoffs for age-specific attack rates
+#' 
+#' @return A `<data.frame>` with the probability of seropositivity by age and 95 CI, as well as annual proportion of the 
+#' population infected by year (where "age" represents the number of years into the past).
+#'
+#'
+#' @export
+#'
 
-# Load Lazy MCMC
-devtools::install_github("jameshay218/lazymcmc")
-# NEED TO MOVE THIS TO A DEPENDENCY
+estimate_mcmc_outbreak <- function(data_in,
+                                   outbreak_years,
+                                   age_band
+                                   ) {
+  
+  # LOAD ALL THE FUNCTIONS BELOW THEN RUN THE BELOW CODE
+  
+  # Load Lazy MCMC
+  devtools::install_github("jameshay218/lazymcmc")
+  # NEED TO MOVE THIS TO A DEPENDENCY
+  
+  # DEBUG: age_band = c(0,20);  outbreak_years = c(1972,1997)
+  # 
+  # # input checking
+  # checkmate::assert_data_frame(
+  #   data_in,
+  #   min.rows = 1, min.cols = 3
+  # )
+  # # check that input `<data.frame>` has columns age and output
+  # checkmate::assert_names(
+  #   colnames(data_in),
+  #   must.include = c("age", "outcome","survey_year")
+  # )
+  # 
+  # # Check outbreak years is a vector
+  # checkmate::assert_vector(
+  #   outbreak_years
+  # )
 
+  # Load and format data
+  data_fiji <- read_csv("https://raw.githubusercontent.com/adamkucharski/fiji-denv3-2014/master/data/serology_inputs.csv")
+  data_in <- data.frame(age = data_fiji$AGE_2015+2.5, outcome = data_fiji$DENV2P, survey_year = 2015) # Use midpoint of age groups
+  
+
+  # Run MCMC functions --------------------------------------------------
+  
+  # Define parameters
+  ## Update the proposal step size every X iterations (opt_freq) for the first X iterations 
+  ## (adaptive_period) to aim for an acceptance rate of 0.44 (popt). After the adaptive period, 
+  ## run for a further X (iterations) steps. Save every nth rows, where n is "thin" (ie. 1 here).
+  ## Write to disk every X iterations (post thinning). Note that the adaptive period is also saved
+  ## to disk
+  mcmcPars <- c("iterations"=1000,"popt"=0.44,"opt_freq"=20,
+                "thin"=1,"adaptive_period"=200,"save_block"=100)
+  
+  ## The MCMC code uses the parameter table. Here, we should specify some random starting
+  ## points in the "values" column.
+  startTab <- data.frame(values=c(0.5,0.5,1),
+                         names=c("attack_outbreaks1","attack_outbreaks2","age_risk"),
+                         fixed=0,
+                         lower_bound=c(0,0,0),
+                         upper_bound=c(1,1,2),
+                         steps=rep(0.1,3),
+                         stringsAsFactors=FALSE)
+  
+  my_creation_function <- function(parTab, data, PRIOR_FUNC, ...){
+    
+    # Define liklihood function:
+    f <- function(pars){
+      survey_likelihood(param = pars, data)
+    }
+    
+    return(f)
+  }
+  
+  # Run MCMC fitting
+  output <- run_MCMC(parTab=startTab, data=data_in, mcmcPars=mcmcPars, filename="test", 
+                     CREATE_POSTERIOR_FUNC=my_creation_function, mvrPars=NULL, 
+                     PRIOR_FUNC = my_prior, OPT_TUNING=0.2)
+  
+  # Plot data and binom CI --------------------------------------------------
+  
+  chain <- read.csv(output$file)
+
+  plot(coda::as.mcmc(chain[chain$sampno > mcmcPars["adaptive_period"],]))
+  
+  # Simulate 20 random draws from the posterior (run multiple to get uncertainty)
+  age_upper <- ceiling(max(data_in$age)); age_range <- 0:age_upper
+  
+  
+  plot(age_range,-100+0*age_range,ylim=c(0,1),ylab="seropositive",xlab="age")
+  
+  for(ii in 1:20){
+    pick_rand <- sample(1:max(chain$sampno),1)
+    param <- chain[,startTab$names][pick_rand,]
+    output_model <- run_model(data_in, attack_outbreaks = as.numeric(param), age_risk,age_band = c(0,20))
+    sim_postitivity <- output_model |> filter(survey_year == 2015)
+    
+    lines(age_range,sim_postitivity[1:length(age_range)],col=rgb(0,0,1,0.2))
+  }
+  
+  # Calculate total tallies and outcome = 1 tallies
+  tallies <- data_in %>%
+    group_by(age) %>%
+    summarise(
+      total_tallies = n(),
+      outcome_1_tallies = sum(outcome == 1, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  # Convert to vectors
+  age_vector <- tallies$age
+  total_tallies_vector <- tallies$total_tallies
+  outcome_1_vector <- tallies$outcome_1_tallies
+  
+  plot_CI(age_vector, xx=outcome_1_vector, nn=total_tallies_vector)
+  
+  
+  
+
+}
 
 
 # Simulation model --------------------------------------------------------
 
 run_model <- function(data_in,
                       attack_outbreaks,
-                      outbreak_years,
                       age_risk,
                       age_band = c(0,20)){
-  
+
   # Get age range in data
   age_upper <- ceiling(max(data_in$age))
   age_range <- 0:age_upper
@@ -76,7 +200,7 @@ run_model <- function(data_in,
 
 survey_likelihood <- function(param, # vector of parameters
                               data # input data
-){
+                              ){
   
   # DEBUG: param <- c(0.5,0.5)
   
@@ -86,8 +210,6 @@ survey_likelihood <- function(param, # vector of parameters
   # DEBUG: Need to add flexibility here
   attack_outbreaks <- param[1:2]
   attack_outbreaks <- pmax(0,pmin(1,attack_outbreaks)) # Constrain 0<=x<=1 (NOTE: APPROX)
-  
-  outbreak_years = param[4:5]
   
   age_risk <- c(1, param[3]) # relative age risk
   #age_risk <- pmax(0,age_risk) # Constrain 0<=x<=1 (NOTE: APPROX)
@@ -103,7 +225,6 @@ survey_likelihood <- function(param, # vector of parameters
   # Run model
   model_out <- run_model(data_in,
                          attack_outbreaks,
-                         outbreak_years,
                          age_risk,
                          age_band = c(0,20))
   
@@ -192,96 +313,4 @@ plot_CI <- function(ages,xx,nn,colA="black") {
   }
   
 }
-
-
-
-# Load and format data
-data_fiji <- read_csv("https://raw.githubusercontent.com/adamkucharski/fiji-denv3-2014/master/data/serology_inputs.csv")
-data_in <- data.frame(age = data_fiji$AGE_2015+2.5, outcome = data_fiji$DENV2P, survey_year = 2015) # Use midpoint of age groups
-
-
-# Run MCMC functions --------------------------------------------------
-
-# Define parameters
-## Update the proposal step size every X iterations (opt_freq) for the first X iterations 
-## (adaptive_period) to aim for an acceptance rate of 0.44 (popt). After the adaptive period, 
-## run for a further X (iterations) steps. Save every nth rows, where n is "thin" (ie. 1 here).
-## Write to disk every X iterations (post thinning). Note that the adaptive period is also saved
-## to disk
-mcmcPars <- c("iterations"=1000,"popt"=0.44,"opt_freq"=20,
-              "thin"=1,"adaptive_period"=200,"save_block"=100)
-
-## The MCMC code uses the parameter table. Here, we should specify some random starting
-## points in the "values" column.
-
-outbreak_years = c(1972,1997)
-
-startTab <- data.frame(values=c(0.5,0.5,1,outbreak_years),
-                       names=c("attack_outbreaks1","attack_outbreaks2","age_risk","outbreakyr1","outbreakyr2"),
-                       fixed=c(0,0,0,1,1),
-                       lower_bound=c(0,0,0,0,0),
-                       upper_bound=c(1,1,2,1e5,1e5),
-                       steps=rep(0.1,5),
-                       stringsAsFactors=FALSE)
-
-my_creation_function <- function(parTab, data, PRIOR_FUNC, ...){
-  
-  # Define liklihood function:
-  f <- function(pars){
-    survey_likelihood(param = pars, data)
-  }
-  
-  return(f)
-}
-
-# Run MCMC fitting
-output <- run_MCMC(parTab=startTab, data=data_in, mcmcPars=mcmcPars, filename="test", 
-                   CREATE_POSTERIOR_FUNC=my_creation_function, mvrPars=NULL, 
-                   PRIOR_FUNC = my_prior, OPT_TUNING=0.2)
-
-# Plot data and binom CI --------------------------------------------------
-
-chain <- read.csv(output$file)
-
-plot(coda::as.mcmc(chain[chain$sampno > mcmcPars["adaptive_period"],]))
-
-# Simulate 20 random draws from the posterior (run multiple to get uncertainty)
-age_upper <- ceiling(max(data_in$age)); age_range <- 0:age_upper
-
-
-plot(age_range,-100+0*age_range,ylim=c(0,1),ylab="seropositive",xlab="age")
-
-for(ii in 1:100){
-  pick_rand <- sample(1:max(chain$sampno),1)
-  param <- chain[,startTab$names][pick_rand,]
-  output_model <- run_model(data_in,
-                            attack_outbreaks = as.numeric(param[1:2]),
-                            age_risk =  c(1,as.numeric(param[3])),
-                            outbreak_years,
-                            age_band = c(0,20))
-  sim_postitivity <- output_model |> dplyr::filter(survey_year == 2015)
-  
-  lines(age_range,sim_postitivity[1:length(age_range)],col=rgb(0,0,1,0.2))
-}
-
-# Calculate total tallies and outcome = 1 tallies
-tallies <- data_in %>%
-  dplyr::group_by(age) %>%
-  dplyr::summarise(
-    total_tallies = dplyr::n(),
-    outcome_1_tallies = sum(outcome == 1, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-# Convert seropositivity data to vectors
-age_vector <- tallies$age
-total_tallies_vector <- tallies$total_tallies
-outcome_1_vector <- tallies$outcome_1_tallies
-
-# Plot seropositivity
-plot_CI(age_vector, xx=outcome_1_vector, nn=total_tallies_vector)
-
-
-
-
 
